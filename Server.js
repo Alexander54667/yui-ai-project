@@ -2,7 +2,33 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
+import path from "path";
+import { fileURLToPath } from "url";
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// =======================
+// PATH SETUP
+// =======================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// =======================
+// SERVE HTML
+// =======================
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "web.HTML"));
+});
+
+// =======================
+// SESSION MEMORY
+// =======================
 const sessions = {};
+
 function deteksiMood(teks) {
   const t = teks.toLowerCase();
 
@@ -29,19 +55,16 @@ function deteksiMood(teks) {
   return "netral";
 }
 
-
-dotenv.config();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// inisialisasi client AI
+// =======================
+// OPENAI CLIENT
+// =======================
 const client = new OpenAI({
-  apiKey: process.env.AI_API_KEY,
+  apiKey: process.env.AI_API_KEY, // pastikan ini ada di Railway
 });
 
-// endpoint chat
+// =======================
+// CHAT ENDPOINT
+// =======================
 app.post("/chat", async (req, res) => {
   try {
     const { message, sessionId } = req.body;
@@ -56,10 +79,9 @@ app.post("/chat", async (req, res) => {
 
     const mood = deteksiMood(message);
 
-    // simpan pesan user SEKALI
     sessions[sessionId].push({
       role: "user",
-      content: message
+      content: message,
     });
 
     if (sessions[sessionId].length > 10) {
@@ -79,16 +101,10 @@ Kamu adalah Yui, AI asisten belajar yang:
 - berasa kayak temen ngobrol
 
 Mood user saat ini: ${mood}
-
-Aturan respon:
-- panik → tenangkan dulu
-- lelah → singkat & lembut
-- senang → santai
-- netral → normal
 `
         },
         ...sessions[sessionId]
-      ]
+      ],
     });
 
     const reply =
@@ -96,7 +112,7 @@ Aturan respon:
 
     sessions[sessionId].push({
       role: "assistant",
-      content: reply
+      content: reply,
     });
 
     res.json({ reply });
@@ -104,13 +120,15 @@ Aturan respon:
   } catch (err) {
     console.error(err);
     res.status(500).json({
-      reply: "⚠️ Yui lagi error. Coba lagi ya."
+      reply: "⚠️ Yui lagi error. Coba lagi ya.",
     });
   }
 });
 
-
-
-app.listen(3000, () => {
-  console.log("🤖 Yui AI server jalan di http://localhost:3000");
+// =======================
+// START SERVER
+// =======================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🤖 Yui AI server jalan di port ${PORT}`);
 });
