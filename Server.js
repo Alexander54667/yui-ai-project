@@ -21,7 +21,7 @@ const __dirname = path.dirname(__filename);
 // SERVE HTML
 // =======================
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "web.HTML"));
+  res.sendFile(path.join(__dirname, "web.html"));
 });
 
 // =======================
